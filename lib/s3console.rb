@@ -13,7 +13,7 @@ require 'logger'
 
 require_relative 's3console/utils'
 
-class S3Console
+class S3console
   S3_PATH_PREFIX = 's3://'
 
   attr_reader :client,
@@ -72,7 +72,8 @@ class S3Console
   end
 
   def list_buckets
-    @buckets ||= @client.list_buckets
+    @buckets ||= @client
+                   .list_buckets
                    .buckets
                    .map { |b| [b.name, @client.get_bucket_location(bucket: b.name).location_constraint] }
                    .to_h
@@ -99,62 +100,30 @@ class S3Console
   end
 end
 
+$s3console = S3console.new
 
-$s3_console = S3Console.new
+print_files $s3console.ls
+while line = Utils::Input.gets
+  case line.strip
+    when /^ls$/
+      ls_files
+    when /^cd(\s+(.+))?$/
+      if $2
+        $s3console.cd $2
+        files = $s3console.ls
 
-def print_files(files)
-  return if files.nil? || files.empty?
-  max_len = files.map(&:size).max
-  slice_size = 80/max_len > 0 ? 80/max_len : 1
-  STDOUT.puts files.sort.map { |f| sprintf("%-#{max_len}s", f) }.each_slice(slice_size).map { |a| a.join("\t") }.join("\n")
-end
-
-def ls_files(files = nil)
-  print_files files || $s3_console.ls
-  loop do
-    break unless $s3_console.is_truncated
-
-    STDOUT.puts ' -*- press space to load more, press q to quit -*- '
-    while c = STDIN.getch
-      case c
-        when ' '
-          break
-        when 'q'
-          $s3_console.cd '.'
-          return
+        if files.nil? || files.empty?
+          STDERR.puts "no such file or directory: #{$2}"
+          $s3console.cd '..'
+        end
+      else
+        $s3console.cd
       end
-    end
-
-    print_files $s3_console.ls
+    when /exit/
+      break
+    else
+      STDERR.puts "command not found: #{line}"
   end
-end
 
-while l = Utils::Input.gets
-  puts l
+  STDOUT.puts
 end
-
-#print_files $s3_console.ls
-#while line = gets_with_prompt
-#  case line.strip
-#    when /^ls$/
-#      ls_files
-#    when /^cd(\s+(.+))?/
-#      if $2
-#        $s3_console.cd $2
-#        files = $s3_console.ls
-#
-#        if files.nil? || files.empty?
-#          STDERR.puts "no such file or directory: #{$2}"
-#          $s3_console.cd '..'
-#        end
-#      else
-#        $s3_console.cd
-#      end
-#    when /exit/
-#      break
-#    else
-#      STDERR.puts "command not found: #{line}"
-#  end
-#
-#  STDOUT.puts
-#end
