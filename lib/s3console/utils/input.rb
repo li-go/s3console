@@ -22,6 +22,10 @@ module S3console
 
       INVALID_INPUTS = [UP, DOWN, LEFT, RIGHT]
 
+      # Get one line input
+      #
+      # @param [String] prompt the prompt when inputting
+      # @return [String] string input
       def gets(prompt = '> ')
         s = '' # current input
         undefined_s = nil # undefined input
@@ -86,6 +90,7 @@ module S3console
         s
       end
 
+      # Clear screen
       def clear
         STDOUT.print "\e[H\e[J"
       end
