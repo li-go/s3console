@@ -41,7 +41,7 @@ module S3console
         end
       end
 
-      module_function :ls, :ls_more
+      module_function :ls
 
     end # module Output
   end # module Utils
